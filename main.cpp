@@ -5,6 +5,8 @@
 #include <iostream>
 #include <cmath>
 #include <functional>
+#include <boost/signals2.hpp>
+#include <boost/bind.hpp>
 
 using namespace std;
 
@@ -41,19 +43,23 @@ void test_template_signal() {
     signal.connect([](){
         cout << "Test1\n";
     });
+    function<void()> test2_func = test2;
     signal.connect(test2);
+    //signal.connect(test2_func);
     signal.connect(Test3(0), &Test3::test3);
     Test3 test4(4);
     signal.connect(&test4, &Test3::test3);
-    signal();
+    //signal();
 
-    Signal<double(double, double)> signal1;
-    signal1.connect([](double x, double y) -> double {
-        double z = x * x + y * y;
-        return std::sqrt(z);
+    Signal<double(string, string)> signal1;
+    signal1.connect([](string x, string y) -> double {
+        return x.size() - y.size();
     });
 
-    cout << "signal1: " << signal1(3, 4) << "\n";
+    cout << "signal1: " << signal1("123", "1") << "\n";
+    string x = "123", y = "1";
+    string &&z = "hello right value";
+    //cout << "signal1: " << signal1(x, y) << "\n";
 }
 
 void test_muduo_signal() {
@@ -104,11 +110,38 @@ void test_signal() {
     signal1(3, 4);
 }
 
+void print() {
+    cout << "\n";
+}
+template<typename T, typename... Args>
+void print(T t, Args&&... args) {
+    cout << t << " ";
+    print(std::forward<Args>(args)...);
+}
+
+void test_boost_signal() {
+    boost::signals2::signal<bool(const string&, const string&)> signal;
+    function<bool(const string&, const string&)> compare = [](const string& x, const string& y) -> bool {
+        if (x < y) {
+            print(x, "is less than", y);
+        }
+    };
+    signal.connect(compare);
+    signal.connect([](const string& x, const string& y) -> bool {
+        if (x > y) {
+            print(x, "is greater than", y);
+        }
+    });
+    signal("123", "1");
+    string x = "1", y = "123";
+    signal(x, y);
+}
 
 int main() {
-//    test_template_signal();
+    //test_template_signal();
+    test_boost_signal();
 //    const Test3 t(10);
 //    bind(&Test3::test3, t)();
-    test_signal();
+    //test_signal();
     return 0;
 }

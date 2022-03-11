@@ -18,8 +18,9 @@ namespace TemplateSignal {
     class Signal<Ret(Args...)> {
         using Slot = std::function<Ret(Args...)>;
     public:
-        void connect(Slot&& slot) {
-            slots_.push_back(std::forward<Slot>(slot));
+        template<typename SLOT>
+        void connect(SLOT&& slot) {
+            slots_.push_back(std::forward<SLOT>(slot));
         }
 
         template<typename O>
@@ -32,10 +33,12 @@ namespace TemplateSignal {
         void connect(const O& obj, Ret (O::*objSlot)(Args...)) {
             slots_.push_back(std::bind(objSlot, obj));
         }
-        Ret operator() (Args&&... args) {
+
+        template<typename ...ARGS>
+        Ret operator() (ARGS&&... args) {
             for (const Slot& slot : slots_) {
                 //完美转发
-                slot(std::forward<Args>(args)...);
+                slot(std::forward<ARGS>(args)...);
             }
         }
     private:

@@ -113,13 +113,15 @@ namespace Utils {
          * @param cb 槽函数
          * @return 需要保存这个智能指针，否则会自动从槽函数列表中删除
          */
-        Slot connect(Callback&& cb) {
-            std::shared_ptr<SlotImpl> slot(new SlotImpl(std::forward<Callback>(cb), impl_));
+        template<typename Func>
+        Slot connect(Func&& cb) {
+            std::shared_ptr<SlotImpl> slot(new SlotImpl(std::forward<Func>(cb), impl_));
             impl_->add(slot);
             return slot;
         }
 
-        void operator() (Args&&... args) {
+        template<typename ...ARGS>
+        void operator() (ARGS&&... args) {
             std::shared_ptr<std::unordered_map<SlotImpl *, std::weak_ptr<SlotImpl>>> slots = impl_->getSlotList();
             //使用引用避免智能指针的解引用
             std::unordered_map<SlotImpl *, std::weak_ptr<SlotImpl>> &s = *slots;
@@ -127,7 +129,7 @@ namespace Utils {
                 std::weak_ptr<SlotImpl> &pWkSlotImpl = pr.second;
                 std::shared_ptr<SlotImpl> pSlotImpl = pWkSlotImpl.lock();
                 if (pSlotImpl) {
-                    pSlotImpl->cb_(std::forward<Args>(args)...);
+                    pSlotImpl->cb_(std::forward<ARGS>(args)...);
                 }
             }
         }
